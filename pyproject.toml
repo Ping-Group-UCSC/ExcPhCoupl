@@ -12,7 +12,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
-license = "MIT"
-license-files = ["LICEN[CS]E*"]
+license = {file = "LICENSE.md"}
 
-[project.urls]
+[project.scripts]
+excph = "src.run:main"
