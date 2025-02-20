@@ -13,6 +13,9 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 license = {file = "LICENSE.md"}
+dynamic = ["dependencies"]
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
 
 [project.scripts]
-excph = "src.run:main"
+excph = "run:main"

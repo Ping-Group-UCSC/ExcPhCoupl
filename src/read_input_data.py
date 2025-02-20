@@ -1,4 +1,4 @@
-from src.read_io import read_qpoints_yambo 
+from read_io import read_qpoints_yambo 
 
 def read_input_data(log):
 	log.info(" +++++++++++++++++++++++++++++  READING YAMBO Q POINTS ++++++++++++++++++++++++++++++ ")

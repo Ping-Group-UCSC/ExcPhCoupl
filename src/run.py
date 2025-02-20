@@ -1,9 +1,9 @@
 import numpy as np
 import yaml
 import logging
-from src.logmod import log_class
-from src.logmod import colored_log_class
-from src.read_input_data import read_input_data
+from logmod import log_class
+from logmod import colored_log_class
+from read_input_data import read_input_data
 
 def main():
 	log = configure()
