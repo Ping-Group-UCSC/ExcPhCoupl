@@ -8,21 +8,14 @@ authors = [
 description = "Python package for the calculation of exciton-phonon coupling"
 readme = "README.md"
 requires-python = ">=3.8"
-
-dependencies = ["numpy",
-                "pyyaml",
-                "colorlog",
-                "matplotlib",
-                "netCDF4"]
-
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
-
 license = {file = "LICENSE.md"}
+dynamic = ["dependencies"]
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
 
 [project.scripts]
-excph = "src.run:main"
-[project.urls]
-Homepage = "https://github.com/Ping-Group-UCSC/ExcPhCoupl/"
+excph = "run:main"
