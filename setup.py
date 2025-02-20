@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
 	name='ExcPhCoupl',
 	version='0.0.1',
-	license='LICENSE',
+	license='gpl-3.0',
 	long_description='README.md',
 	packages=find_packages(),
 	install_requires=[
