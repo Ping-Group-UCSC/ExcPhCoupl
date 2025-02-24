@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 from __future__ import print_function, division
-import sys
 import numpy as np
-#from numpy import linalg as LA
-#import matplotlib.pyplot as plt
+from numpy import linalg as LA
 from netCDF4 import Dataset
 import itertools
+from logmod import log
 
 # Importing specific functions and parameters from user-defined modules
-from modules.param import *
-
-from modules.func import *
+from common.param import *
+from common.func import *
 
 def read_qpoints_yambo():
 	"""Read q-points from Yambo and convert them to the appropriate coordinate system."""
-	Q_yambo_rku = np.genfromtxt('./qpoints_yambo', skip_header=1)[:, 0:3]
+	qpt_fil = p.data_dir + '/qpoints_yambo'
+	log.debug("\t qpt file: " + qpt_fil)
+	Q_yambo_rku = np.genfromtxt(qpt_fil, skip_header=1)[:, 0:3]
 	Q_yambo = np.einsum('ij,ni->nj', LA.inv(b_iku), Q_yambo_rku)
-	print("Q_yambo:", Q_yambo)
+	log.info("Q_yambo: " + str(Q_yambo))
 	return Q_yambo
 
 def read_bse_wavefunction(Q_yambo, A_exc, exc_freq):
