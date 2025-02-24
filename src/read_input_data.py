@@ -1,13 +1,19 @@
-from read_io import read_qpoints_yambo 
+from read_io import read_qpoints_yambo
+from logmod import log
+from common.param import p
+import numpy as np
 
-def read_input_data(log):
-	log.info(" +++++++++++++++++++++++++++++  READING YAMBO Q POINTS ++++++++++++++++++++++++++++++ ")
+def read_data():
+	log.info("\t READING YAMBO Q POINTS ")
 	Q_yambo = read_qpoints_yambo()
-	'''
-        # Initialize arrays
-	A_exc = np.zeros((N_Q, beta, N_k, N_v, N_c), dtype='complex64')
-	exc_freq = np.zeros((N_Q, beta), dtype='float32')
+
+	# Initialize arrays
+	A_exc = np.zeros((p.N_Q, p.beta, p.N_k, p.N_v, p.N_c), dtype='complex64')
+	exc_freq = np.zeros((p.N_Q, p.beta), dtype='float32')
+	log.debug("\t A_exc size: " + str(A_exc.shape))
+	log.debug("\t exc_freq size: " + str(exc_freq.shape))
 	
+	'''
 	# Read BSE wavefunction data
 	A_exc, exc_freq = read_bse_wavefunction(Q_yambo, A_exc, exc_freq)
 	
@@ -29,4 +35,4 @@ def read_input_data(log):
 	g_elph.tofile('g_elph.dat')
 	ph_freq.tofile('ph_freq.dat')
 	'''
-	print('Job done.')
+	log.info('\t Job done.')
