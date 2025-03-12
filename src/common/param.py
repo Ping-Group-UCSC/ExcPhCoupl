@@ -11,6 +11,9 @@ class parameters:
         # File Paths
         self.working_dir = ''
         self.data_dir = ''
+        self.output_data_dir = ''
+        self.elph_dir = ''
+        self.path_elph_data = ''
 
         # Exciton Band Parameters
         self.alpha = 8
@@ -18,13 +21,13 @@ class parameters:
 
         # Coarse Q-mesh
         Qmesh = [18, 18, 2]               # Coarse mesh dimensions
-        qmesh = Qmesh.copy()              # Copy of coarse mesh
+        self.qmesh = Qmesh.copy()         # Copy of coarse mesh
         self.N_Q = np.prod(Qmesh)         # Total number of Q points
         self.N_q = self.N_Q               # Alias for total number of Q points
 
         # Fine Q-mesh
         fQmesh = [18, 18, 2]              # Fine mesh dimensions
-        fqmesh = fQmesh.copy()            # Copy of fine mesh
+        self.fqmesh = fQmesh.copy()       # Copy of fine mesh
         self.fN_Q = np.prod(fQmesh)       # Total number of fine Q points
         self.fN_q = self.fN_Q             # Alias for total number of fine Q points
 
@@ -34,6 +37,9 @@ class parameters:
         self.N_v = 2                      # Number of valence bands in BSE
         self.N_c = 2                      # Number of conduction bands in BSE
         self.nbnds = 10                   # Number of bands in the electron-phonon (elph) calculation
+
+        # phonon modes
+        self.nmodes = 12 
 
     def read_input_parameters(self, yml_input):
         log.info("\t reading input file: " + yml_input)
@@ -51,10 +57,39 @@ class parameters:
         # data dir
         if 'data_dir' in inp:
             self.data_dir = self.working_dir + '/' + inp['data_dir']
-
+        if 'output_data_dir' in inp:
+            self.output_data_dir = self.working_dir + '/' + inp['output_data_dir']
+        # el-ph dir
+        if 'elph_dir' in inp:
+            self.elph_dir = self.working_dir + '/' + inp['elph_dir']
+        # bands in el-ph calculation
+        if 'nbnds' in inp:
+            self.nbnds = inp['nbnds']
+        # n. conduction bands
+        if 'N_c' in inp:
+            self.N_c = inp['N_c']
+        # n. valence bands
+        if 'N_v' in inp:
+            self.N_v = inp['N_v']
+        # n. electrons
+        if 'N_e' in inp:
+            self.N_e = inp['N_e']
+        # exciton bands
+        if 'alpha' in inp:
+            self.alpha = inp['alpha']
+        if 'beta' in inp:
+            self.beta = inp['beta']
+        # Q mesh
+        if 'Qmesh' in inp:
+            self.qmesh = inp['Qmesh']
+            self.N_Q = np.prod(self.qmesh)
+            self.N_q = self.N_Q
+            self.N_k = self.N_Q
+        # elph data
+        self.path_elph_data = self.elph_dir + '/ndb.elph_gkkp_expanded_fragment_'
+        
 p = parameters()
 
-path_elph_data = '../dvscf/bn.save/SAVE/ndb.elph_gkkp_expanded_fragment_'
 path_excph_data = '../dvscf/bn.save/SAVE/ndb.excph_gkkp_fragment_'
 path_ex = '../dvscf/bn.save/SAVE/'
 path_bse = './'  # Path for o.* files from Yambo
