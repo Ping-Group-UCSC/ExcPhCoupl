@@ -3,6 +3,7 @@ from __future__ import print_function, division
 import numpy as np
 
 from common.param import *
+from common.param import p
 
 # k-point mapping functions
 def wrap(k, c=np.zeros(3)):
@@ -15,13 +16,13 @@ kcenter = np.array([0.5, 0.5, 0.5])
 def k2ik(k):
     ktmp = wrap(k, kcenter)
     if k.ndim == 1:
-        return int((np.round(ktmp[0]*qmesh[0]) % qmesh[0]) * qmesh[1] * qmesh[2] + 
-                   (np.round(ktmp[1]*qmesh[1]) % qmesh[1]) * qmesh[2] + 
-                   (np.round(ktmp[2]*qmesh[2]) % qmesh[2]))
+        return int((np.round(ktmp[0]*p.qmesh[0]) % p.qmesh[0]) * p.qmesh[1] * p.qmesh[2] + 
+                   (np.round(ktmp[1]*p.qmesh[1]) % p.qmesh[1]) * p.qmesh[2] + 
+                   (np.round(ktmp[2]*p.qmesh[2]) % p.qmesh[2]))
     else:
-        return ((np.round(ktmp[:,0]*qmesh[0]) % qmesh[0]) * qmesh[1] * qmesh[2] + 
-                (np.round(ktmp[:,1]*qmesh[1]) % qmesh[1]) * qmesh[2] + 
-                (np.round(ktmp[:,2]*qmesh[2]) % qmesh[2])).astype(np.int32)
+        return ((np.round(ktmp[:,0]*p.qmesh[0]) % p.qmesh[0]) * p.qmesh[1] * p.qmesh[2] + 
+                (np.round(ktmp[:,1]*p.qmesh[1]) % p.qmesh[1]) * p.qmesh[2] + 
+                (np.round(ktmp[:,2]*p.qmesh[2]) % p.qmesh[2])).astype(np.int32)
 
 def ik2k(ik):
     ikx = ik // (qmesh[1] * qmesh[2])
