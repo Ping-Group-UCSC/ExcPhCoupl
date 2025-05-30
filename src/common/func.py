@@ -25,10 +25,10 @@ def k2ik(k):
                 (np.round(ktmp[:,2]*p.qmesh[2]) % p.qmesh[2])).astype(np.int32)
 
 def ik2k(ik):
-    ikx = ik // (qmesh[1] * qmesh[2])
-    iky = (ik // qmesh[2]) % qmesh[1]
-    ikz = ik % qmesh[2]
-    return np.array([ikx/qmesh[0], iky/qmesh[1], ikz/qmesh[2]]).reshape(3)
+    ikx = ik // (p.qmesh[1] * p.qmesh[2])
+    iky = (ik // p.qmesh[2]) % p.qmesh[1]
+    ikz = ik % p.qmesh[2]
+    return np.array([ikx/p.qmesh[0], iky/p.qmesh[1], ikz/p.qmesh[2]]).reshape(3)
 
 def k2ik_fqmesh(k,fqmesh):
   ktmp = wrap(k,kcenter)
