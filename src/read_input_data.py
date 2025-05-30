@@ -1,17 +1,21 @@
 from read_io import read_qpoints_yambo, read_bse_wavefunction, read_elph_data, normalize_elph
 from logmod import log
 from common.param import p
+from mpi_module import mpi, MPI_ROOT
 import numpy as np
+import os
 
 def read_data():
-	log.info("\t READING YAMBO Q POINTS ")
+	if mpi.rank == MPI_ROOT:
+		log.info("\t READING YAMBO Q POINTS ")
 	Q_yambo = read_qpoints_yambo()
 
 	# Initialize arrays
 	A_exc = np.zeros((p.N_Q, p.beta, p.N_k, p.N_v, p.N_c), dtype='complex64')
 	exc_freq = np.zeros((p.N_Q, p.beta), dtype='float32')
-	log.debug("\t A_exc size: " + str(A_exc.shape))
-	log.debug("\t exc_freq size: " + str(exc_freq.shape))
+	if mpi.rank == MPI_ROOT:
+		log.debug("\t A_exc size: " + str(A_exc.shape))
+		log.debug("\t exc_freq size: " + str(exc_freq.shape))
 	
 	'''
 	# Read BSE wavefunction data
@@ -24,18 +28,28 @@ def read_data():
 
 	# Initialize arrays for electron-phonon coupling and phonon frequencies
 	g_elph = np.zeros((p.N_Q, p.N_k, p.N_v+p.N_c, p.N_v+p.N_c, p.nmodes), dtype='complex64')
-	log.debug("\t electron-phonon shape: " + str(g_elph.shape))
+	if mpi.rank == MPI_ROOT:
+		log.debug("\t electron-phonon shape: " + str(g_elph.shape))
 	ph_freq = np.zeros((p.N_Q, p.nmodes), dtype='float32')
-	log.debug("\t ph. frequencies shape: " + str(ph_freq.shape))
+	if mpi.rank == MPI_ROOT:
+		log.debug("\t ph. frequencies shape: " + str(ph_freq.shape))
 	
 	# Read electron-phonon coupling data
-	g_elph, ph_freq = read_elph_data(Q_yambo, g_elph, ph_freq)
-	
-	# Normalize the electron-phonon matrix
-	g_elph, ph_freq = normalize_elph(g_elph, ph_freq)
-	
-	# Save electron-phonon coupling matrix and phonon frequencies
-	g_elph.tofile(p.output_data_dir + '/g_elph.dat')
-	ph_freq.tofile(p.output_data_dir + '/ph_freq.dat')
-	
-	log.info('\t Job done.')
+	if os.path.exists(p.output_data_dir+'/g_elph.dat'):
+		if mpi.rank == MPI_ROOT:
+			log.info("\t reading el-ph and ph. freq. data ...")
+		g_elph = np.fromfile(p.output_data_dir+'/g_elph.dat', dtype='complex64').reshape((p.N_Q, p.N_k, p.N_v+p.N_c, p.N_v+p.N_c, p.nmodes))
+		ph_freq = np.fromfile(p.output_data_dir+'/ph_freq.dat', dtype='float32').reshape((p.N_Q, p.nmodes))
+	else:
+		g_elph, ph_freq = read_elph_data(Q_yambo, g_elph, ph_freq)
+		# Normalize the electron-phonon matrix
+		g_elph, ph_freq = normalize_elph(g_elph, ph_freq)
+		# Save electron-phonon coupling matrix and phonon frequencies
+		if mpi.rank == MPI_ROOT:
+			g_elph.tofile(p.output_data_dir + '/g_elph.dat')
+			ph_freq.tofile(p.output_data_dir + '/ph_freq.dat')
+
+	if mpi.rank == MPI_ROOT:
+		log.info('\t Job done.')
+
+	return A_exc, exc_freq, g_elph, ph_freq
