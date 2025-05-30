@@ -3,3 +3,4 @@ pyyaml
 colorlog
 matplotlib
 netCDF4
+mpi4py
