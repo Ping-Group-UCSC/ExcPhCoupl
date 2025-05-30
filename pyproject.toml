@@ -4,6 +4,7 @@ version = "0.0.1"
 authors = [
   { name="Chunhao Guo", email="cguo58@wisc.edu" },
   { name="Jacopo Simoni", email="jsimoni@wisc.edu" },
+  { name="Andrew C. Grieder", email="acgrieder@wisc.edu" },
 ]
 description = "Python package for the calculation of exciton-phonon coupling"
 readme = "README.md"

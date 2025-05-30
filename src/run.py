@@ -1,47 +1,53 @@
-import numpy as np
-import yaml
-import logging
-from logmod import log_class
-from logmod import colored_log_class
-from read_input_data import read_input_data
+from logmod import log
+from read_input_data import read_data
+from input_parser import parser
+from common.param import p
+from exc_ph_mod import compute_excph
+from mpi_module import mpi
+from read_io import save_Geph
+import os
 
 def main():
-	log = configure()
-	log.debug(" ++++++++++++++++++++++++++++++  START READING INPUT DATA ++++++++++++++++++++++++++++++ ")
-	read_input_data(log)
+	yml_input = parser.parse_args().yml_inp[0]
+	if mpi.rank == mpi.root:
+		log.info("\t input file: " + yml_input)
+		log.debug("\t ++++++++++++++++++++++++++++++  START READING INPUT DATA ++++++++++++++++++++++++++++++ ")
+	p.read_input_parameters(yml_input)
+	if mpi.rank == mpi.root:
+		log.debug("\t data dir " + p.data_dir)
+		if not os.path.exists(p.output_data_dir):
+			os.mkdir(p.output_data_dir)
+	A_exc, exc_freq, g_elph, ph_freq = read_data()
+	if mpi.rank == mpi.root:
+		log.info("\n")
+		log.info("\t ---------------------------------------------------------------------------------------- ")
+		log.info("\t DATA COLLECTED")
+		log.info("\t ---------------------------------------------------------------------------------------- ")
+		log.info("\n")
+		log.info("\t ---------------------------------------------------------------------------------------- ")
+		log.info("\t COMPUTE EXCITON-PHONON COUPLING")
+		log.info("\t ---------------------------------------------------------------------------------------- ")
+	iQ_lim = mpi.split_range(p.N_Q)
+	[iQ1, iQ2] = iQ_lim[mpi.rank]
+	log.debug("\t rank: " + str(mpi.rank) + " - " + str(iQ1) + " - " + str(iQ2))
+	G_cc, G_vv = compute_excph(g_elph, A_exc, iQ1, iQ2)
+	# combine two contributions
+	G = G_cc + G_vv
+	# save Geph to file
+	dir_path = p.output_data_dir+'/excph_dir'
+	if mpi.rank == mpi.root:
+		if not os.path.isdir(dir_path):
+			os.mkdir(dir_path)
+	mpi.comm.Barrier()
+	save_Geph(G, iQ1, iQ2, dir_path)
+	mpi.comm.Barrier()
+	if mpi.rank == mpi.root:
+		log.info("\n")
+		log.info("\t ---------------------------------------------------------------------------------------- ")
+		log.info("\t EXCITON-PHONON COUPLING DATA SAVED")
+		log.info("\t ---------------------------------------------------------------------------------------- ")
+		log.info("\n")
 
-def configure():
-	# open config.yml
-	try:
-		f = open("./config.yml")
-	except:
-		raise Exception("config.yml cannot be opened")
-	config = yaml.load(f, Loader=yaml.Loader)
-	f.close()
-	
-	if 'LOG_LEVEL' in config:
-		if config['LOG_LEVEL'] == "DEBUG":
-			LOG_LEVEL = logging.DEBUG
-		elif config['LOG_LEVEL'] == "INFO":
-			LOG_LEVEL = logging.INFO
-		elif config['LOG_LEVEL'] == "WARNING":
-			LOG_LEVEL = logging.WARNING
-		elif config['LOG_LEVEL'] == "ERROR":
-			LOG_LEVEL = logging.ERROR
-		elif config['LOG_LEVEL'] == "CRITICAL":
-			LOG_LEVEL = logging.CRITICAL
-		else:
-			LOG_LEVEL = logging.NOTSET
-	if 'COLORED_LOGGING' in config:
-		COLOR = config['COLORED_LOGGING']
-	if 'LOGFILE' in config:
-		LOGFILE = config['LOGFILE']
-	# set up logging system
-	if COLOR:
-		log = colored_log_class(LOG_LEVEL)
-	else:
-		log = log_class(LOG_LEVEL, LOGFILE)
-	return log
 	
 if __name__ == '__main__':
 	main()
