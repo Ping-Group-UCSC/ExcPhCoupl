@@ -25,18 +25,17 @@ DATA_DIR       = "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-e
 
 # MPI setup
 comm = mpi.comm
-rank = mpi.rank
-size = mpi.size
+rank = mpi.rank #Rank 0 as “master” for logging and directory creation
+size = mpi.size #is the total number of MPI processes.
 ROOT = MPI_ROOT
 
 def read_qpoints_yambo():
-    """ Rank 0 reads qpoints_yambo, then bcasts the (N_Q×3) array to all ranks. """
+    """ Rank 0 reads qpoints_yambo, then bcasts the N_Qx3 array to all ranks. """
     qfile = os.path.join(DATA_DIR, "qpoints_yambo")
     if rank == ROOT:
-        # Load the file: first line = #Q, next lines = x y z 1
+        # Load the file
         with open(qfile, "r") as f:
             lines = f.readlines()
-        # drop the first line, parse the next N_Q lines, keep only x,y,z
         Q_yambo = np.zeros((p.N_Q, 3), dtype=float)
         for i in range(p.N_Q):
             parts = lines[i+1].split()
@@ -46,7 +45,7 @@ def read_qpoints_yambo():
     else:
         Q_yambo = None
 
-    # Broadcast so every rank ends up with the full (N_Q×3) array
+    # Broadcast so every rank ends up with the full array
     Q_yambo = comm.bcast(Q_yambo, root=ROOT)
     return Q_yambo
 
@@ -86,7 +85,7 @@ def read_bse_wavefunction(Q_yambo):
         # Reconstruct complex eigenstates, then reshape:
         #    BS_EIGENSTATES[..., 0] = real part, [...,1] = imag part
         complex_states = BS_EIGENSTATES[:p.beta, :, 0] + 1j*BS_EIGENSTATES[:p.beta, :, 1]
-        # Now reshape into (β, N_k, N_v, N_c). This depends on your exact ordering:
+        # Now reshape into (beta, N_k, N_v, N_c)
         A_slice = complex_states.reshape((p.beta, p.N_k, p.N_v, p.N_c))
         freq_slice = BS_Energies[:p.beta, 0]
 
@@ -117,19 +116,17 @@ def read_elph_data(Q_yambo):
     then gather on ROOT into full g_elph and ph_freq.
     We now infer the true band count and number of modes from fragment 1.
     """
-    # 1) Discover actual_bands and actual_nmodes on ROOT
     if rank == ROOT:
         sample_fname = os.path.join(ELPH_SAVE_DIR, "ndb.elph_gkkp_expanded_fragment_1")
         if not os.path.isfile(sample_fname):
             raise FileNotFoundError(f"Missing sample el-ph file: {sample_fname}")
         ds_sample = Dataset(sample_fname, "r")
-        sample_elph = ds_sample.variables["ELPH_GKKP_Q1"][:]  # shape (Fk, bands, bands, nmodes, 2)
+        sample_elph = ds_sample.variables["ELPH_GKKP_Q1"][:]
         ds_sample.close()
 
-        actual_bands  = sample_elph.shape[1]  # e.g. 10
-        actual_nmodes = sample_elph.shape[3]  # e.g. 12
+        actual_bands  = sample_elph.shape[1]
+        actual_nmodes = sample_elph.shape[3]
 
-        # Allocate with the real dimensions
         g_elph  = np.zeros((p.N_Q, p.N_k, actual_bands, actual_bands, actual_nmodes),
                            dtype=np.complex128)
         ph_freq = np.zeros((p.N_Q, actual_nmodes), dtype=float)
@@ -148,8 +145,8 @@ def read_elph_data(Q_yambo):
     start = rank * k + min(rank, m)
     end   = start + k + (1 if rank < m else 0)
 
-    local_g_list  = []  # Will hold (iQ, ik, g_slice)
-    local_ph_list = []  # Will hold (iQ, ph_slice)
+    local_g_list  = []
+    local_ph_list = []
 
     for frag in range(start, end):
         fname = f"ndb.elph_gkkp_expanded_fragment_{frag+1}"
@@ -163,21 +160,18 @@ def read_elph_data(Q_yambo):
         PH_FREQS_frag = ds.variables[f"PH_FREQS{frag+1}"][:]      # shape (actual_nmodes,)
         ds.close()
 
-        # Combine real(…,0) and imag(…,1) → complex: resulting shape (p.N_k, bands, bands, actual_nmodes)
         arr_complex = ELPH_frag[..., 0] + 1j * ELPH_frag[..., 1]
 
         for kfrag in range(p.N_k):
-            ik = kfrag  # or use k2ik(Q_yambo[kfrag]) if that mapping is needed
-            g_slice  = arr_complex[kfrag]          # shape (actual_bands, actual_bands, actual_nmodes)
-            ph_slice = PH_FREQS_frag[:actual_nmodes]  # length actual_nmodes
+            ik = kfrag
+            g_slice  = arr_complex[kfrag]
+            ph_slice = PH_FREQS_frag[:actual_nmodes]
             local_g_list.append((frag, ik, g_slice))
             local_ph_list.append((frag, ph_slice))
 
-    # 3) Gather from all ranks onto ROOT
     gathered_g  = comm.gather(local_g_list,  root=ROOT)
     gathered_ph = comm.gather(local_ph_list, root=ROOT)
 
-    # 4) On ROOT, assemble into g_elph and ph_freq
     if rank == ROOT:
         for rdata in gathered_g:
             for (iQ, ik, g_slice) in rdata:
@@ -190,10 +184,12 @@ def read_elph_data(Q_yambo):
     g_elph  = comm.bcast(g_elph,  root=ROOT)
     ph_freq = comm.bcast(ph_freq, root=ROOT)
     return g_elph, ph_freq
+
+
 def normalize_elph(g_elph, ph_freq):
     """Divide each el-ph matrix by sqrt(2 * ω_q,mode) (with an acoustic cutoff)."""
-    eps_acoustic = 1e-3  # meV, for example
-    meV = 1.0           # conversion factor if needed
+    eps_acoustic = 1e-3
+    meV = 1.0
 
     # Convert ph_freq to real positive frequencies
     ph_freq = np.sqrt(np.abs(ph_freq))
