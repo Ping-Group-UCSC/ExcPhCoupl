@@ -5,41 +5,43 @@ import yaml
 from logmod import log
 from common.constants import Ha2eV
 
+
 class parameters:
     def __init__(self):
 
-        # File Paths
-        self.working_dir = ''
-        self.data_dir = ''
-        self.output_data_dir = ''
-        self.elph_dir = ''
-        self.path_elph_data = ''
+        # ─── File Paths ──────────────────────────────────────────────────────────
+        self.data_dir       = "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/QPT6/dvscf/bn.save"
+        self.path_bse_data  = "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/exciton/SAVE"
+        self.elph_dir       = "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/QPT6/dvscf/bn.save/SAVE"
+        self.path_elph_data = self.elph_dir + "/ndb.elph_gkkp_expanded_fragment_"
+        # ─────────────────────────────────────────────────────────────────────────
 
-        # Exciton Band Parameters
+        # Exciton Band Parameters (leave α,β as you like)
         self.alpha = 8
-        self.beta = 8
+        self.beta  = 8
 
         # Coarse Q-mesh
-        Qmesh = [18, 18, 2]               # Coarse mesh dimensions
-        self.qmesh = Qmesh.copy()         # Copy of coarse mesh
-        self.N_Q = np.prod(Qmesh)         # Total number of Q points
-        self.N_q = self.N_Q               # Alias for total number of Q points
+        Qmesh = [8, 8, 2]
+        self.qmesh = Qmesh.copy()
+        self.N_Q   = np.prod(Qmesh)
+        self.N_q   = self.N_Q
 
-        # Fine Q-mesh
-        fQmesh = [18, 18, 2]              # Fine mesh dimensions
-        self.fqmesh = fQmesh.copy()       # Copy of fine mesh
-        self.fN_Q = np.prod(fQmesh)       # Total number of fine Q points
-        self.fN_q = self.fN_Q             # Alias for total number of fine Q points
+        # Fine Q-mesh (if used)
+        fQmesh = [8, 8, 2]
+        self.fqmesh = fQmesh.copy()
+        self.fN_Q   = np.prod(fQmesh)
+        self.fN_q   = self.fN_Q
 
         # Electronic Parameters
-        self.N_e = 8                      # Number of electrons
-        self.N_k = self.N_Q               # Number of k-points in Yambo
-        self.N_v = 2                      # Number of valence bands in BSE
-        self.N_c = 2                      # Number of conduction bands in BSE
-        self.nbnds = 10                   # Number of bands in the electron-phonon (elph) calculation
+        self.N_Q    = 72
+        self.N_k    = 72
+        self.N_v    = 2
+        self.N_c    = 2
+        self.beta   = 8
+        self.nbnds = 10                # # bands in el-ph calculation
 
         # phonon modes
-        self.nmodes = 12 
+        self.nmodes = 12               # set this to match your NetCDFs
 
     def read_input_parameters(self, yml_input):
         log.info("\t reading input file: " + yml_input)
@@ -48,6 +50,7 @@ class parameters:
         except:
             msg = "\t COULD NOT FIND: " + yml_input
             log.error(msg)
+            return
         inp = yaml.load(f, Loader=yaml.Loader)
         f.close()
         # working dir
@@ -87,20 +90,22 @@ class parameters:
             self.N_k = self.N_Q
         # elph data
         self.path_elph_data = self.elph_dir + '/ndb.elph_gkkp_expanded_fragment_'
-        
+
+
 p = parameters()
 
-path_excph_data = '../dvscf/bn.save/SAVE/ndb.excph_gkkp_fragment_'
-path_ex = '../dvscf/bn.save/SAVE/'
-path_bse = './'  # Path for o.* files from Yambo
-path_excph = './'  # Path for excph matrix (excph.dat)
+# These “path_…” variables allow your read_io script to refer to them:
+path_excph_data = "../dvscf/bn.save/SAVE/ndb.excph_gkkp_fragment_"
+path_ex         = "../dvscf/bn.save/SAVE/"
+path_bse        = "./"   # if your read_io_mpi.py does something like `path_bse + f"ndb.BS_diago_Q{…}"`
+path_excph      = "./"
 
 # Phonon Mode Parameters
 nmodes = 12  # Number of phonon modes
 
 # Reciprocal Lattice Vectors
 b = [[1.000000, 0.577350, 0.000000],  # Reciprocal lattice vectors for the structure
-     [0.000000, 1.154701, 0.000000], 
+     [0.000000, 1.154701, 0.000000],
      [0.000000, 0.000000, 0.326020]]
 
 b_iku = [[1.000000, 0.500000, 0.000000],  # Reciprocal lattice vectors used for indexing
