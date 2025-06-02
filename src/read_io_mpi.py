@@ -15,7 +15,7 @@ from common.func import *
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# 1) Hard-code all “SAVE” paths here:
+# 1) Hard-code all “SAVE” paths here: I am testing this with git push
 # ──────────────────────────────────────────────────────────────────────────────
 BSE_SAVE_DIR   = "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/exciton/SAVE"
 ELPH_SAVE_DIR  = "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/QPT6/dvscf/bn.save/SAVE"
