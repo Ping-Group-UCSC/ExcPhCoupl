@@ -2,44 +2,57 @@
 import sys
 import re
 import math
+import os
+
+# ──────────────────────────────────────────────────────────────────────────────
+# 1) Change this line to point at your “exciton” folder:
+# ──────────────────────────────────────────────────────────────────────────────
+YAMBO_DATA_DIR = "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/QPT6/dvscf/bn.save"
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 
 def search_string_in_file(file_name, string_to_search):
-    """Search for the given string in file and return lines containing that string,
-    along with line numbers"""
+    """Search for string_to_search in file_name, return list of (lineno, line)."""
     line_number = 0
     list_of_results = []
-    # Open the file in read only mode
     with open(file_name, 'r') as read_obj:
-        # Read all lines in the file one by one
         for line in read_obj:
-            # For each line, check if line contains the string
             line_number += 1
             if string_to_search in line:
-                # If yes, then add the line number & line as a tuple in the list
                 list_of_results.append((line_number, line.rstrip()))
-    # Return list of tuples containing line numbers and lines where string is found
     return list_of_results
-
 
 
 print("\n\n * * * Get q-points from Ypp output * * *")
 
-qstart=search_string_in_file('r_gkkp_gkkp_db','Q-points list in Yambo')
-qend  =search_string_in_file('r_gkkp_gkkp_db','[09] Timing Overview')
+# Build the full path to r_gkkp_gkkp_db inside the “exciton” folder:
+yambo_db_path = os.path.join(YAMBO_DATA_DIR, "r_gkkp_gkkp_db")
 
-nq_points=qend[0][0]-qstart[0][0]-4
+# Now search inside that file:
+qstart = search_string_in_file(yambo_db_path, 'Q-points list in Yambo')
+qend   = search_string_in_file(yambo_db_path, '[09] Timing Overview')
 
-print("Number of q-points : ",nq_points)
+# If the markers are found, compute # of q‐points:
+if not qstart or not qend:
+    print("ERROR: Could not find the markers in", yambo_db_path)
+    sys.exit(1)
 
-ypp_log=open('r_gkkp_gkkp_db','r')
-lines=ypp_log.readlines()
+nq_points = qend[0][0] - qstart[0][0] - 4
+print("Number of q-points:", nq_points)
 
-qfile=open('qpoints_yambo','w')
-qfile.write(str(nq_points)+"\n")
+# Read all lines so we can slice out the q‐point block:
+with open(yambo_db_path, 'r') as ypp_log:
+    lines = ypp_log.readlines()
 
-for il in range(qstart[0][0]+2,qend[0][0]-2):
-    qpoint=[round(float(item),6) for item in lines[il].split()]
-#    qpoint=[float(item) for item in lines[il].split()]
-    qfile.write(str(qpoint[0])+"  "+str(qpoint[1])+"  "+str(qpoint[2])+"  1\n")
+# Open (or create) the output file “qpoints_yambo” inside the same directory:
+qfile_path = os.path.join(YAMBO_DATA_DIR, "qpoints_yambo")
+with open(qfile_path, 'w') as qfile:
+    qfile.write(str(nq_points) + "\n")
 
-qfile.close()
+    # Write each q‐point (x, y, z, 1) as in the original script:
+    for il in range(qstart[0][0] + 2, qend[0][0] - 2):
+        qpoint = [round(float(item), 6) for item in lines[il].split()]
+        qfile.write(f"{qpoint[0]}  {qpoint[1]}  {qpoint[2]}  1\n")
+
+print("Wrote qpoints_yambo →", qfile_path)
