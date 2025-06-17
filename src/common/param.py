@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import print_function, division
 import numpy as np
+import os
 import yaml
 from logmod import log
 from common.constants import Ha2eV
@@ -44,11 +45,11 @@ class parameters:
         self.nmodes = 12               # set this to match your NetCDFs
 
     def read_input_parameters(self, yml_input):
-        log.info("\t reading input file: " + yml_input)
+        log.info("\\t reading input file: " + yml_input)
         try:
-            f = open(yml_input)
+            f = open(yml_input) # This is where the path is used
         except:
-            msg = "\t COULD NOT FIND: " + yml_input
+            msg = "\\t COULD NOT FIND: " + yml_input
             log.error(msg)
             return
         inp = yaml.load(f, Loader=yaml.Loader)
@@ -56,15 +57,35 @@ class parameters:
         # working dir
         if 'working_dir' in inp:
             self.working_dir = inp['working_dir']
-        log.debug("\t working dir: " + self.working_dir)
+        # Ensure self.working_dir has a default if not in YAML, or ensure YAML always provides it.
+        # For this edit, we assume self.working_dir is set (e.g., from YAML or a default in __init__).
+        # If __init__ doesn't set it and YAML doesn't, getattr would be safer for logging.
+        log.debug("\\t working dir: " + getattr(self, 'working_dir', 'NOT SET (defaulting to current for joining if relative)'))
+
         # data dir
         if 'data_dir' in inp:
-            self.data_dir = self.working_dir + '/' + inp['data_dir']
+            input_data_path = inp['data_dir']
+            if os.path.isabs(input_data_path):
+                self.data_dir = input_data_path
+            else:
+                # Use current working directory if self.working_dir is not meaningfully set
+                base_dir_for_join = getattr(self, 'working_dir', '.') if self.working_dir else '.'
+                self.data_dir = os.path.join(base_dir_for_join, input_data_path)
+
+        # output_data_dir
         if 'output_data_dir' in inp:
-            self.output_data_dir = self.working_dir + '/' + inp['output_data_dir']
+            # output_data_dir is usually relative to working_dir
+            base_dir_for_join = getattr(self, 'working_dir', '.') if self.working_dir else '.'
+            self.output_data_dir = os.path.join(base_dir_for_join, inp['output_data_dir'])
+
         # el-ph dir
         if 'elph_dir' in inp:
-            self.elph_dir = self.working_dir + '/' + inp['elph_dir']
+            input_elph_path = inp['elph_dir']
+            if os.path.isabs(input_elph_path):
+                self.elph_dir = input_elph_path
+            else:
+                base_dir_for_join = getattr(self, 'working_dir', '.') if self.working_dir else '.'
+                self.elph_dir = os.path.join(base_dir_for_join, input_elph_path)
         # bands in el-ph calculation
         if 'nbnds' in inp:
             self.nbnds = inp['nbnds']
@@ -88,8 +109,9 @@ class parameters:
             self.N_Q = np.prod(self.qmesh)
             self.N_q = self.N_Q
             self.N_k = self.N_Q
-        # elph data
-        self.path_elph_data = self.elph_dir + '/ndb.elph_gkkp_expanded_fragment_'
+        # elph data path (this should use the potentially updated self.elph_dir)
+        # Ensure self.elph_dir is defined before using it here. It's set if 'elph_dir' in inp, otherwise uses __init__ default.
+        self.path_elph_data = os.path.join(self.elph_dir, 'ndb.elph_gkkp_expanded_fragment_')
 
 
 p = parameters()

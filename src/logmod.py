@@ -3,6 +3,8 @@ import inspect
 import sys
 from colorlog import ColoredFormatter
 import yaml
+import time  # Added for timing
+from functools import wraps # Added for decorator best practices
 
 class log_class:
 	def __init__(self, LOG_LEVEL, logfile):
@@ -61,7 +63,20 @@ class log_class:
 		msg2 += message
 		self.logger.error(msg2, *args)
 		sys.exit(1)
-		
+
+	def time_this(self, func_to_time):
+		"""Decorator to time a function and log its execution time using self.logger.info."""
+		@wraps(func_to_time)
+		def wrapper(*args, **kwargs):
+			start_time = time.perf_counter()
+			result = func_to_time(*args, **kwargs)
+			end_time = time.perf_counter()
+			duration = end_time - start_time
+			# Using self.logger.info directly for a distinct timing message format
+			self.logger.info(f"[TIMING] {func_to_time.__module__}.{func_to_time.__name__} executed in {duration:.4f}s")
+			return result
+		return wrapper
+
 class colored_log_class:
 	def __init__(self, LOG_LEVEL):
 		LOG_FORMAT= "  %(log_color)s%(levelname)-8s%(reset)s | %(log_color)s%(message)s%(reset)4s"
@@ -129,6 +144,19 @@ class colored_log_class:
 		self.log.error(msg2, *args)
 		sys.exit(1)
 
+	def time_this(self, func_to_time):
+		"""Decorator to time a function and log its execution time using self.log.info."""
+		@wraps(func_to_time)
+		def wrapper(*args, **kwargs):
+			start_time = time.perf_counter()
+			result = func_to_time(*args, **kwargs)
+			end_time = time.perf_counter()
+			duration = end_time - start_time
+			# Using self.log.info directly for a distinct timing message format
+			self.log.info(f"[TIMING] {func_to_time.__module__}.{func_to_time.__name__} executed in {duration:.4f}s")
+			return result
+		return wrapper
+
 def configure():
 	# open config.yml
 	try:
@@ -137,7 +165,7 @@ def configure():
 		raise Exception("config.yml cannot be opened")
 	config = yaml.load(f, Loader=yaml.Loader)
 	f.close()
-	
+
 	if 'LOG_LEVEL' in config:
 		if config['LOG_LEVEL'] == "DEBUG":
 			LOG_LEVEL = logging.DEBUG

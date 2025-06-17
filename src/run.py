@@ -16,7 +16,7 @@ def main():
 	if mpi.rank == mpi.root:
 		log.debug("\t data dir " + p.data_dir)
 		if not os.path.exists(p.output_data_dir):
-			os.mkdir(p.output_data_dir)
+			os.makedirs(p.output_data_dir, exist_ok=True)
 	A_exc, exc_freq, g_elph, ph_freq = read_data()
 	if mpi.rank == mpi.root:
 		log.info("\n")
@@ -37,7 +37,7 @@ def main():
 	dir_path = p.output_data_dir+'/excph_dir'
 	if mpi.rank == mpi.root:
 		if not os.path.isdir(dir_path):
-			os.mkdir(dir_path)
+			os.makedirs(dir_path, exist_ok=True)
 	mpi.comm.Barrier()
 	save_Geph(G, iQ1, iQ2, dir_path)
 	mpi.comm.Barrier()
@@ -48,6 +48,6 @@ def main():
 		log.info("\t ---------------------------------------------------------------------------------------- ")
 		log.info("\n")
 
-	
+
 if __name__ == '__main__':
 	main()
