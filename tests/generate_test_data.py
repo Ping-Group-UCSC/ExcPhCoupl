@@ -104,6 +104,32 @@ def generate_and_save_data():
             bs_eigenstates[:] = eigenstates_data
             bs_energies[:] = energies_data
 
+    # --- Create dummy NetCDF files for ELPH data ---
+    # Similar to the BSE files, we need to create a complete set of dummy
+    # files for the electron-phonon coupling data.
+    print(f"Generating {p.N_Q} dummy ELPH files...")
+    for i in range(1, p.N_Q + 1):
+        dummy_elph_path = os.path.join(TEST_INPUT_DIR, f'ndb.elph_gkkp_expanded_fragment_{i}')
+        with Dataset(dummy_elph_path, 'w', format='NETCDF4_CLASSIC') as ds:
+            # Define dimensions based on test parameters. Note that the ELPH files
+            # have a different band dimension than the final g_elph array.
+            ds.createDimension('complex', 2)
+            ds.createDimension('n_k_points', p.N_k)
+            # The 'nbnds' parameter reflects the total number of bands in the raw data.
+            ds.createDimension('n_bands_elph', p.nbnds)
+            ds.createDimension('n_modes', p.nmodes)
+
+            # Create the variables that the read_io function expects to find.
+            elph_var_name = f'ELPH_GKKP_Q{i}'
+            ph_freq_var_name = f'PH_FREQS{i}'
+            elph_gkkp = ds.createVariable(elph_var_name, 'f4', ('n_k_points', 'n_bands_elph', 'n_bands_elph', 'n_modes', 'complex'))
+            ph_freqs = ds.createVariable(ph_freq_var_name, 'f4', ('n_modes',))
+
+            # Fill with placeholder data.
+            elph_gkkp[:] = np.zeros((p.N_k, p.nbnds, p.nbnds, p.nmodes, 2))
+            ph_freqs[:] = np.zeros((p.nmodes,))
+
+
     print("\n--- Test Data Generation Summary ---")
     print(f"g_elph array generated with shape: {g_elph_array.shape}")
     print(f"Saved to: {g_elph_path}")
