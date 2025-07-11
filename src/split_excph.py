@@ -22,7 +22,7 @@ def compute_excph_contributions(g_elph, A_exc, Q_ind):
     # Add a progress counter
     total_iterations = p.N_q * p.N_k
     iteration_count = 0
-    log_interval = total_iterations // 10  # Log at 10% intervals
+    log_interval = total_iterations // 10
 
     for q_ind, k_ind in itertools.product(range(p.N_q), range(p.N_k)):
         iteration_count += 1
@@ -31,7 +31,7 @@ def compute_excph_contributions(g_elph, A_exc, Q_ind):
             log.debug(f"Rank {mpi.rank}, Q_ind {Q_ind}: Loop progress {progress:.1f}% ({iteration_count}/{total_iterations})")
 
         try:
-            # Compute k-point indices following original working script logic
+            # Compute k-point indices
             Qq_ind = k2ik(ik2k(Q_ind) + ik2k(q_ind))
             kq_ind = k2ik(ik2k(k_ind) + ik2k(q_ind))
             kQ_ind = k2ik(ik2k(k_ind) - ik2k(Q_ind))
@@ -40,7 +40,7 @@ def compute_excph_contributions(g_elph, A_exc, Q_ind):
             if Qq_ind >= p.N_Q or kq_ind >= p.N_k or kQ_ind >= p.N_k:
                 continue
 
-            # Conduction band contribution using working script approach
+            # Conduction band contribution
             temp_cc[q_ind, :, :, :] += np.einsum(
                 'mij,nik,jkl->nml',
                 A_exc[Qq_ind, 0:p.beta, kq_ind, :, :].conj(),
@@ -48,7 +48,7 @@ def compute_excph_contributions(g_elph, A_exc, Q_ind):
                 g_elph[q_ind, kq_ind, p.N_v:p.N_v + p.N_c, p.N_v:p.N_v + p.N_c, :].conj()
             )
 
-            # Valence band contribution using working script approach
+            # Valence band contribution
             temp_vv[q_ind, :, :, :] += -np.einsum(
                 'mij,nkj,kil->nml',
                 A_exc[Qq_ind, 0:p.beta, k_ind, :, :].conj(),
@@ -57,7 +57,6 @@ def compute_excph_contributions(g_elph, A_exc, Q_ind):
             )
 
         except (IndexError, ValueError) as e:
-            # Skip problematic indices
             log.debug(f"Skipping indices Q={Q_ind}, q={q_ind}, k={k_ind}: {e}")
             continue
 
@@ -78,7 +77,6 @@ def save_excph_fragment(Q_ind, temp_cc, temp_vv):
     if mpi.size > 1:
         mpi.comm.Barrier()
 
-    # Combine conduction and valence contributions
     Gamma_Q = temp_cc + temp_vv
 
     # Save to file
@@ -136,10 +134,8 @@ def split_excph_serial(g_elph, A_exc):
         for Q_ind in range(p.N_Q):
             log.debug(f"Processing Q-point {Q_ind + 1}/{p.N_Q}")
 
-            # Compute contributions for this Q point
             temp_cc, temp_vv = compute_excph_contributions(g_elph, A_exc, Q_ind)
 
-            # Save the results
             save_excph_fragment(Q_ind, temp_cc, temp_vv)
 
         log.info("Serial exciton-phonon coupling computation completed!")
@@ -174,7 +170,7 @@ def run_split_excph(g_elph, A_exc):
             log.error("Received invalid data arrays. Exiting split_excph.")
         return False
 
-    # Run computation (parallel or serial)
+    # Run computation
     if mpi.size > 1:
         split_excph_parallel(g_elph, A_exc)
     else:

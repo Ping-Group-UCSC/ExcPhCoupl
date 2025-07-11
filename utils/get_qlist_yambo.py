@@ -4,12 +4,9 @@ import re
 import math
 import os
 
-# ──────────────────────────────────────────────────────────────────────────────
-# 1) Change this line to point at your “exciton” folder:
+
 # ──────────────────────────────────────────────────────────────────────────────
 YAMBO_DATA_DIR = "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/QPT6/dvscf/bn.save"
-
-
 # ──────────────────────────────────────────────────────────────────────────────
 
 def search_string_in_file(file_name, string_to_search):
@@ -29,7 +26,6 @@ print("\n\n * * * Get q-points from Ypp output * * *")
 # Build the full path to r_gkkp_gkkp_db inside the “exciton” folder:
 yambo_db_path = os.path.join(YAMBO_DATA_DIR, "r_gkkp_gkkp_db")
 
-# Now search inside that file:
 qstart = search_string_in_file(yambo_db_path, 'Q-points list in Yambo')
 qend   = search_string_in_file(yambo_db_path, '[09] Timing Overview')
 

@@ -181,7 +181,6 @@ def read_bse_wavefunction(Q_yambo):
 	if rank == ROOT:
 		log.info(f'Exciton wavefunctions A_exc shape: {A_exc.shape}')
 		if p.N_Q > 0 and A_exc.shape[0] > 0 :
-			# Use the working script's norm check approach
 			norm_check_val = np.abs(np.einsum('bkvc,bkvc->b', A_exc[0].conj(), A_exc[0]))
 			log.info(f'Norm check (A_exc[0]): {norm_check_val}')
 	comm.Barrier()
@@ -232,7 +231,6 @@ def read_elph_data(Q_yambo):
 		actual_bands = _actual_bands_val
 		actual_nmodes = _actual_nmodes_val
 
-	# Use the correct dimensions after slicing like the working script
 	g_elph_shape = (p.N_Q, p.N_k, p.N_v + p.N_c, p.N_v + p.N_c, actual_nmodes)
 	ph_freq_shape = (p.N_Q, actual_nmodes)
 
@@ -270,7 +268,6 @@ def read_elph_data(Q_yambo):
 
 			num_k_to_process = min(elph_data_frag.shape[0], p.N_k)
 
-			# Use the working script's approach with N_e slicing
 			arr_ELPH_fragment = elph_data_frag[:, p.N_e-p.N_v:p.N_e+p.N_c, p.N_e-p.N_v:p.N_e+p.N_c, :, :]
 			elph_complex = arr_ELPH_fragment[:, :, :, :, 0] + 1j * arr_ELPH_fragment[:, :, :, :, 1]
 			g_temp = elph_complex.reshape((p.N_k, p.N_c + p.N_v, p.N_c + p.N_v, actual_nmodes))
@@ -297,7 +294,6 @@ def read_elph_data(Q_yambo):
 					iQ = k2ik(Q_yambo[iQ_idx])
 					_ph_freq_root[iQ] = ph_s
 
-		# Broadcast the assembled arrays back to all ranks
 		if rank == ROOT:
 			log.debug("Broadcasting g_elph and ph_freq to all processes...")
 		g_elph = comm.bcast(_g_elph_root, root=ROOT)
@@ -332,15 +328,12 @@ def read_elph_data(Q_yambo):
 
 			num_k_to_process = min(num_k_in_file, p.N_k)
 
-			# Use the working script's approach with N_e slicing
 			arr_ELPH_fragment = elph_data_frag_raw[:, p.N_e-p.N_v:p.N_e+p.N_c, p.N_e-p.N_v:p.N_e+p.N_c, :, :]
 			elph_complex = arr_ELPH_fragment[:, :, :, :, 0] + 1j * arr_ELPH_fragment[:, :, :, :, 1]
 			g_temp = elph_complex.reshape((p.N_k, p.N_c + p.N_v, p.N_c + p.N_v, actual_nmodes))
 
-			# Map Q_yambo to iQ using k2ik like in working script
 			iQ = k2ik(Q_yambo[fragment_ind])
 
-			# Copy data with proper k-point mapping following working script approach
 			for k_fragment_ind in range(min(num_k_to_process, len(Q_yambo))):
 				ik = k2ik(Q_yambo[k_fragment_ind])
 				g_elph[iQ, ik] = g_temp[k_fragment_ind].astype(np.complex64)
@@ -441,7 +434,6 @@ def collect_excph_data():
 
 					if temp.size != expected_size:
 						log.warning(f"File {filename} has size {temp.size}, expected {expected_size}")
-						# Try to reshape with available data
 						if temp.size > 0:
 							temp = temp[:expected_size] if temp.size > expected_size else temp
 
@@ -474,10 +466,8 @@ def collect_excph_data():
 			log.info(f'Saved excph2.dat with shape: {Gamma_square.shape}')
 			log.info('Collection complete!')
 
-	# Synchronize all processes
 	comm.Barrier()
 
-	# Broadcast success status to all processes
 	if rank == ROOT:
 		success = True
 	else:

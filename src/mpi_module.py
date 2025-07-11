@@ -2,7 +2,6 @@
 
 import numpy as np
 
-# Define the root process ID, which is conventionally 0.
 MPI_ROOT = 0
 
 # --- Graceful MPI Import ---
