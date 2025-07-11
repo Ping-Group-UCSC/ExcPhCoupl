@@ -1,4 +1,4 @@
-# YexcphPP: Exciton-Phonon Coupling Package
+# Exciton-Phonon Coupling Package
 
 This package calculates exciton-phonon coupling properties from Yambo and Quantum Espresso simulation data, featuring an MPI-parallelized workflow.
 
