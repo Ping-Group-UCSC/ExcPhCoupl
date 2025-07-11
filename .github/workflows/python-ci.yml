@@ -120,7 +120,7 @@ jobs:
           # These paths point to the small, generated test data
           data_dir: "tests/test_inputs"
           elph_dir: "tests/test_inputs"
-          path_bse_data: "tests/test_inputs" # Assuming this gets used, otherwise it's harmless
+          bse_data_dir: "tests/test_inputs"
           # Use small dimensions matching the test data
           Qmesh: [4, 1, 1] # Simplified for N_Q=4
           N_v: 2

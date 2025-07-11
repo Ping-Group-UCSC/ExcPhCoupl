@@ -114,6 +114,15 @@ class parameters:
         # Ensure self.elph_dir is defined before using it here. It's set if 'elph_dir' in inp, otherwise uses __init__ default.
         self.path_elph_data = os.path.join(self.elph_dir, 'ndb.elph_gkkp_expanded_fragment_')
 
+        # bse_data_dir
+        if 'bse_data_dir' in inp:
+            input_bse_path = inp['bse_data_dir']
+            if os.path.isabs(input_bse_path):
+                self.path_bse_data = input_bse_path
+            else:
+                base_dir_for_join = getattr(self, 'working_dir', '.') if self.working_dir else '.'
+                self.path_bse_data = os.path.join(base_dir_for_join, input_bse_path)
+
 
 p = parameters()
 
