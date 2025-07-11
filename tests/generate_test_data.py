@@ -14,6 +14,7 @@ decide to change the fundamental dimensions of the test inputs.
 import numpy as np
 import os
 import sys
+from netCDF4 import Dataset
 
 # Add src directory to path to import parameters. This allows us to use the
 # parameter object to define the dimensions of our test data.
