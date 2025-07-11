@@ -145,10 +145,11 @@ def split_excph_serial(g_elph, A_exc):
         log.info("Serial exciton-phonon coupling computation completed!")
         log.info(f"Generated {p.N_Q} excph fragment files in {excph_dir}")
 
-def run_split_excph():
+def run_split_excph(g_elph, A_exc):
     """
     Main function to run the split exciton-phonon coupling calculation.
-    Automatically detects MPI environment and runs appropriate version.
+    Accepts data arrays as arguments and automatically detects MPI environment
+    to run the appropriate parallel or serial version.
     """
     start_time = time.time()
 
@@ -167,12 +168,10 @@ def run_split_excph():
         log.info(f"  N_c: {p.N_c}")
         log.info("="*80)
 
-    # Read input data
-    g_elph, A_exc = read_excph_input_data()
-
+    # Check if input data is valid
     if g_elph is None or A_exc is None:
         if mpi.rank == MPI_ROOT:
-            log.error("Failed to read input data. Exiting.")
+            log.error("Received invalid data arrays. Exiting split_excph.")
         return False
 
     # Run computation (parallel or serial)
