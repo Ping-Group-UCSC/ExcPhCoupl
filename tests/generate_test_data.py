@@ -80,25 +80,29 @@ def generate_and_save_data():
     g_elph_array.tofile(g_elph_path)
     A_exc_array.tofile(A_exc_path)
 
-    # --- Create a dummy NetCDF file for BSE data ---
-    # The test doesn't need real BSE data, just a file with the correct name
+    # --- Create dummy NetCDF files for BSE data ---
+    # The test doesn't need real BSE data, just files with the correct names
     # and variable structure to pass the initial file-opening checks.
-    dummy_bse_path = os.path.join(TEST_INPUT_DIR, 'ndb.BS_diago_Q1')
-    with Dataset(dummy_bse_path, 'w', format='NETCDF4_CLASSIC') as ds:
-        ds.createDimension('complex', 2)
-        ds.createDimension('n_states', p.beta)
-        ds.createDimension('n_kvc', p.N_k * p.N_v * p.N_c)
-        ds.createDimension('n_energies', 2) # Typically Eigen-value and imaginary part
+    # We loop from 1 to N_Q to create a file for each expected Q-point.
+    print(f"Generating {p.N_Q} dummy BSE files...")
+    for i in range(1, p.N_Q + 1):
+        dummy_bse_path = os.path.join(TEST_INPUT_DIR, f'ndb.BS_diago_Q{i}')
+        with Dataset(dummy_bse_path, 'w', format='NETCDF4_CLASSIC') as ds:
+            # Define the dimensions based on our test parameters.
+            ds.createDimension('complex', 2)
+            ds.createDimension('n_states', p.beta)
+            ds.createDimension('n_kvc', p.N_k * p.N_v * p.N_c)
+            ds.createDimension('n_energies', 2) # Typically Eigen-value and imaginary part
 
-        # Create dummy variables that the read_io function expects to find
-        bs_eigenstates = ds.createVariable('BS_EIGENSTATES', 'f4', ('n_states', 'n_kvc', 'complex'))
-        bs_energies = ds.createVariable('BS_Energies', 'f4', ('n_states', 'n_energies'))
+            # Create the variables that the read_io function expects to find.
+            bs_eigenstates = ds.createVariable('BS_EIGENSTATES', 'f4', ('n_states', 'n_kvc', 'complex'))
+            bs_energies = ds.createVariable('BS_Energies', 'f4', ('n_states', 'n_energies'))
 
-        # Fill with some placeholder data
-        eigenstates_data = np.zeros((p.beta, p.N_k * p.N_v * p.N_c, 2))
-        energies_data = np.zeros((p.beta, 2))
-        bs_eigenstates[:] = eigenstates_data
-        bs_energies[:] = energies_data
+            # Fill the variables with placeholder data (arrays of zeros).
+            eigenstates_data = np.zeros((p.beta, p.N_k * p.N_v * p.N_c, 2))
+            energies_data = np.zeros((p.beta, 2))
+            bs_eigenstates[:] = eigenstates_data
+            bs_energies[:] = energies_data
 
     print("\n--- Test Data Generation Summary ---")
     print(f"g_elph array generated with shape: {g_elph_array.shape}")
