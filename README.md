@@ -59,4 +59,26 @@ python tests/generate_test_data.py
 pytest tests/
 ```
 
-This project is set up with GitHub Actions to automatically run these tests upon every push and pull request to the `main` branch.
+## Testing Strategy
+
+This project uses a robust unit testing suite to ensure the correctness and stability of the core computational logic. The tests are designed to be independent of specific materials or large datasets, making them fast and reliable for continuous integration.
+
+The tests can be found in the `tests/` directory and verify the following:
+
+1.  **K-Point Conversion (`test_kpoint_conversion_roundtrip`)**:
+    *   **What:** Ensures that the mapping between k-point vectors and their array indices is mathematically self-consistent.
+    *   **Why:** Guarantees the fundamental coordinate transformations are correct.
+
+2.  **Output Shape Verification (`test_compute_excph_contributions_output_shape`)**:
+    *   **What:** Confirms that the main computational function produces NumPy arrays with the correct dimensions.
+    *   **Why:** Prevents bugs related to array reshaping or incorrect loop boundaries.
+
+3.  **Numerical Stability (`test_compute_excph_contributions_no_nan_or_inf`)**:
+    *   **What:** Checks that the calculations do not result in "Not a Number" (`NaN`) or infinite (`inf`) values.
+    *   **Why:** Ensures the calculations are numerically stable and free from errors like division by zero.
+
+4.  **Known Value Regression Test (`test_compute_excph_contributions_known_value`)**:
+    *   **What:** The most critical test. It runs the main computational function with a simple, known input and verifies that the output matches a pre-calculated, correct answer.
+    *   **Why:** Protects the scientific integrity of the code by immediately detecting any accidental changes to the underlying mathematical formulas.
+
+This project is set up with GitHub Actions to automatically run these tests upon every push and pull request to the `main` and `develop` branches.
