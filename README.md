@@ -7,7 +7,7 @@ This post processing package calculates exciton-phonon coupling properties from 
 The core data processing workflow is implemented and unit-tested. This includes:
 1.  **Step 1:** Reading raw Yambo/QE NetCDF data.
 2.  **Step 2:** Computing exciton-phonon coupling matrices in parallel (`split` and `collect`).
-3.  **Step 3:** Averaging degenerate exciton energies.
+3.  **Step 3:** Phonon Assisted Radiative lifetimes and rates -- In development
 
 ## Prerequisites
 
