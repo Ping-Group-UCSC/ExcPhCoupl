@@ -14,12 +14,12 @@ on:
   # Trigger the workflow on push events to the "main" branch.
   # This is ideal for ensuring the main branch is always stable.
   push:
-    branches: ["main"]
+    branches: ["main", "develop"]
 
   # Trigger the workflow on pull request events targeting the "main" branch.
   # This is crucial for vetting changes before they are merged into the main codebase.
   pull_request:
-    branches: ["main"]
+    branches: ["main", "develop"]
 
   # Allows you to run this workflow manually from the Actions tab.
   # Useful for re-running tests or testing a specific commit.
