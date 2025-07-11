@@ -30,67 +30,120 @@ on:
 # -----------------
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel.
 jobs:
-  # Define a single job named "build-and-test".
-  build-and-test:
-    # The type of runner that the job will run on.
-    # "ubuntu-latest" is a standard, cost-effective choice for general-purpose CI.
+  # ====================================================================
+  # Job 1: Run Serial Unit Tests
+  # This job tests the core mathematical logic using pytest.
+  # ====================================================================
+  test-serial:
+    name: "Test (Serial, Python ${{ matrix.python-version }})"
     runs-on: ubuntu-latest
-
-    # -----------------
-    # ---- Strategy ---
-    # -----------------
-    # Defines a build matrix for your jobs. This allows you to run tests
-    # across different versions of Python to ensure compatibility.
     strategy:
-      # If one Python version fails, it won't cancel the other runs.
       fail-fast: false
       matrix:
-        # We will test against Python 3.12, which matches your local environment.
-        # You can add more versions here like '3.10', '3.11' to test broader compatibility.
         python-version: ["3.12"]
 
-    # -----------------
-    # ----- Steps -----
-    # -----------------
-    # A sequence of tasks that will be executed as part of the job.
     steps:
-      # --- Step 1: Check out the repository code ---
-      # This action checks out your repository under $GITHUB_WORKSPACE, so your job can access it.
       - name: Check out repository
-        uses: actions/checkout@v4 # Uses a pre-made GitHub Action for checking out code.
+        uses: actions/checkout@v4
 
-      # --- Step 2: Set up a Python environment ---
-      # This action sets up a Python environment for use in subsequent steps.
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          # Optional: Caching pip dependencies to speed up future builds.
           cache: "pip"
 
-      # --- Step 3: Set up MPI ---
-      # The simulation code requires an MPI implementation. This step installs it on the runner.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Generate unit test data
+        run: python tests/generate_test_data.py
+
+      - name: Run unit tests with pytest
+        run: pytest tests/
+
+  # ====================================================================
+  # Job 2: Run Full Workflow in Parallel (MPI)
+  # This job runs the full workflow with a small dataset to ensure that
+  # the MPI execution path does not hang or crash. It does not check
+  # for numerical correctness, only for successful completion.
+  # ====================================================================
+  test-parallel:
+    name: "Test (Parallel, Python ${{ matrix.python-version }})"
+    runs-on: ubuntu-latest
+    # This job will only run if the 'test-serial' job has completed successfully.
+    needs: test-serial
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
       - name: Install MPI libraries
         run: |
           sudo apt-get update
           sudo apt-get install -y mpich libmpich-dev
 
-      # --- Step 4: Install Python dependencies ---
-      # Installs the packages required by the project, including the testing framework.
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest # Explicitly install pytest
+          pip install pytest
 
-      # --- Step 5: Run the tests ---
-      # This step executes the test suite using pytest.
-      # The reference data you added to `tests/reference_data` will be used here.
-      # The `test_workflow.py` script will be discovered and run by pytest.
-      # For a non-MPI test, you could just run `pytest`.
-      - name: Generate test data
+      # For the parallel test, we use the small, self-contained test data
+      # instead of relying on large external datasets.
+      - name: Generate small dataset for MPI run
+        run: python tests/generate_test_data.py
+
+      # We need a configuration file that points to the small test data.
+      - name: Create a temporary config file for parallel test
         run: |
-          python tests/generate_test_data.py
-      - name: Run unit tests with pytest
+          cat <<EOF > config_test_mpi.yml
+          working_dir: "."
+          output_data_dir: "calculation_output"
+          # These paths point to the small, generated test data
+          data_dir: "tests/test_inputs"
+          elph_dir: "tests/test_inputs"
+          path_bse_data: "tests/test_inputs" # Assuming this gets used, otherwise it's harmless
+          # Use small dimensions matching the test data
+          Qmesh: [4, 1, 1] # Simplified for N_Q=4
+          N_v: 2
+          N_c: 2
+          alpha: 2
+          beta: 2
+          N_e: 8
+          nbnds: 10
+          nmodes: 3
+          LOG_LEVEL: DEBUG
+          COLORED_LOGGING: TRUE
+          EOF
+
+      # We also need a qpoints file for the test run.
+      - name: Create a temporary qpoints file for parallel test
         run: |
-          pytest tests/
+          mkdir -p tests/test_inputs
+          cat <<EOF > tests/test_inputs/qpoints_yambo
+          4
+          0.0  0.0  0.0  1
+          0.25 0.0  0.0  1
+          0.5  0.0  0.0  1
+          0.75 0.0  0.0  1
+          EOF
+
+      - name: Run full workflow with mpirun
+        # This command runs the main application with 2 processes.
+        # The test passes if the command exits with a status code of 0.
+        # The `--use-hwthread-cpus` flag can help prevent resource conflicts on some runners.
+        run: |
+          mpirun -n 2 --use-hwthread-cpus python src/run.py -yml_inp config_test_mpi.yml
