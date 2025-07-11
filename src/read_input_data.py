@@ -11,23 +11,29 @@ def read_data():
         log.info("\\t READING YAMBO Q POINTS ")
     Q_yambo = read_qpoints_yambo()
 
-    # Initialize A_exc and exc_freq as the BSE reading part below is commented out.
-    # If BSE reading is enabled, these lines can be removed if read_bse_wavefunction populates them.
-    A_exc = np.zeros((p.N_Q, p.beta, p.N_k, p.N_v, p.N_c), dtype='complex64')
-    exc_freq = np.zeros((p.N_Q, p.beta), dtype='float32')
+    # Read or load exciton wavefunction data
+    if os.path.exists(p.output_data_dir+'/A_exc.dat') and os.path.exists(p.output_data_dir+'/exc_freq.dat'):
+        if mpi.rank == MPI_ROOT:
+            log.info("\\t Reading exciton data from existing .dat files...")
+        A_exc = np.fromfile(p.output_data_dir+'/A_exc.dat', dtype='complex64').reshape((p.N_Q, p.beta, p.N_k, p.N_v, p.N_c))
+        exc_freq = np.fromfile(p.output_data_dir+'/exc_freq.dat', dtype='float32').reshape((p.N_Q, p.beta))
+    else:
+        if mpi.rank == MPI_ROOT:
+            log.info("\\t Reading BSE wavefunction data from source NetCDF files...")
+        # Read BSE wavefunction data
+        A_exc, exc_freq = read_bse_wavefunction(Q_yambo)
+
+        # Save exciton wavefunctions and energies
+        if mpi.rank == MPI_ROOT:
+            log.info("\\t Saving A_exc.dat and exc_freq.dat...")
+            if not os.path.exists(p.output_data_dir):
+                os.makedirs(p.output_data_dir, exist_ok=True)
+            A_exc.tofile(p.output_data_dir + '/A_exc.dat')
+            exc_freq.tofile(p.output_data_dir + '/exc_freq.dat')
+
     if mpi.rank == MPI_ROOT:
-        log.debug("\\t A_exc size (initial): " + str(A_exc.shape))
-        log.debug("\\t exc_freq size (initial): " + str(exc_freq.shape))
-
-    '''
-    # Read BSE wavefunction data
-    # If uncommented, the call should be:
-    A_exc, exc_freq = read_bse_wavefunction(Q_yambo)
-
-    # Save exciton wavefunctions and energies
-    # A_exc.tofile('A_exc.dat')
-    # exc_freq.tofile('exc_freq.dat')
-    '''
+        log.debug("\\t A_exc size: " + str(A_exc.shape))
+        log.debug("\\t exc_freq size: " + str(exc_freq.shape))
 
     # Read or process electron-phonon coupling data
     if os.path.exists(p.output_data_dir+'/g_elph.dat') and os.path.exists(p.output_data_dir+'/ph_freq.dat'):

@@ -1,2 +1,94 @@
-LOG_LEVEL: DEBUG
-COLORED_LOGGING: TRUE
+# ==============================================================================
+# YexcphPP Configuration File
+# ==============================================================================
+# This file contains all configuration parameters for the YexcphPP workflow.
+# It combines path settings, calculation parameters, and logging configuration.
+
+# ------------------------------------------------------------------------------
+# Directory Paths
+# ------------------------------------------------------------------------------
+# working_dir: Base directory for relative output paths
+# If you run src/run.py from the ExcPhCoupl directory,
+# "./calculation_output" would be ExcPhCoupl/calculation_output/
+working_dir: "./calculation_output"
+
+# Directory containing the 'qpoints_yambo' file and other Yambo SAVE data
+# This corresponds to self.data_dir in param.py
+data_dir: "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/QPT6/dvscf/bn.save"
+
+# Directory containing the ELPH NetCDF fragment files
+# This corresponds to self.elph_dir in param.py
+elph_dir: "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/QPT6/dvscf/bn.save/SAVE"
+
+# Directory where the script will save its output .dat files and 'excph_dir'
+# This path is relative to 'working_dir' by default
+output_data_dir: "./output_files"
+
+# NOTE on BSE data path (self.path_bse_data):
+# The BSE data path is currently hardcoded in ExcPhCoupl/src/common/param.py as:
+# self.path_bse_data = "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/exciton/SAVE"
+#
+# If you need to change this path, you can either:
+# 1. Edit the path directly in src/common/param.py, OR
+# 2. Add support for 'bse_data_dir' in this config file by modifying param.py
+#
+# Uncomment and modify the line below if you implement option 2:
+# bse_data_dir: "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/exciton/SAVE"
+
+# ------------------------------------------------------------------------------
+# Calculation Parameters
+# ------------------------------------------------------------------------------
+# These parameters will override the defaults in param.py when read
+
+# Q-mesh for the calculation (determines N_Q = Qmesh[0] * Qmesh[1] * Qmesh[2])
+# N_k is typically set equal to N_Q
+Qmesh: [6, 6, 2] # Results in N_Q = 6*6*2 = 72 Q-points
+
+# Electronic band parameters
+N_v: 2 # Number of valence bands involved in excitonic states
+N_c: 2 # Number of conduction bands involved in excitonic states
+N_e: 8 # Number of electrons (total electrons in the system)
+
+# Total number of bands used in the underlying el-ph calculation
+# This should match the number of bands in your NetCDF files
+nbnds: 10
+
+# Exciton state parameters
+alpha: 8 # Number of exciton states (initial states)
+beta: 8 # Number of exciton states (final states)
+
+# ------------------------------------------------------------------------------
+# Logging Configuration
+# ------------------------------------------------------------------------------
+LOG_LEVEL: INFO # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+COLORED_LOGGING: TRUE # Enable colored console output
+LOGFILE: "logfile.log" # Log file name (will be created in working_dir)
+
+# ------------------------------------------------------------------------------
+# Advanced Parameters (Optional)
+# ------------------------------------------------------------------------------
+# These parameters can be uncommented and modified if needed
+
+# Temperature parameters (in Kelvin)
+# T_0_ph: 77.0     # Phonon temperature
+# T_0_exc: 8.0     # Excitation temperature
+# T_room: 300.0    # Room temperature
+
+# Energy broadening parameters (in eV)
+# sig_pl: 0.004    # Plasmon broadening
+# sig_scat: 0.004  # Scattering broadening
+
+# Phonon mode parameters
+# nmodes: 12       # Number of phonon modes (should match NetCDF files)
+
+# ------------------------------------------------------------------------------
+# Usage Notes
+# ------------------------------------------------------------------------------
+# To run the workflow with this configuration:
+#   Serial:   python src/run.py -yml_inp config.yml
+#   MPI:      mpirun -n 4 python src/run.py -yml_inp config.yml
+#
+# Make sure all specified paths exist and contain the required data files:
+#   - data_dir should contain: qpoints_yambo, SAVE/ directory
+#   - elph_dir should contain: ndb.elph_gkkp_expanded_fragment_* files
+#   - BSE data path should contain: ndb.BS_diago_Q* files

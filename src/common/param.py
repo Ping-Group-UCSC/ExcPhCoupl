@@ -4,7 +4,7 @@ import numpy as np
 import os
 import yaml
 from logmod import log
-from common.constants import Ha2eV
+from common.constants import Ha2eV, eV
 
 
 class parameters:
@@ -17,28 +17,27 @@ class parameters:
         self.path_elph_data = self.elph_dir + "/ndb.elph_gkkp_expanded_fragment_"
         # ─────────────────────────────────────────────────────────────────────────
 
-        # Exciton Band Parameters (leave α,β as you like)
+        # Exciton Band Parameters
         self.alpha = 8
         self.beta  = 8
 
-        # Coarse Q-mesh
-        Qmesh = [8, 8, 2]
+        # Coarse Q-mesh (updated to match working parameters)
+        Qmesh = [6, 6, 2]
         self.qmesh = Qmesh.copy()
         self.N_Q   = np.prod(Qmesh)
         self.N_q   = self.N_Q
 
-        # Fine Q-mesh (if used)
-        fQmesh = [8, 8, 2]
+        # Fine Q-mesh (updated to match working parameters)
+        fQmesh = [6, 6, 2]
         self.fqmesh = fQmesh.copy()
         self.fN_Q   = np.prod(fQmesh)
         self.fN_q   = self.fN_Q
 
         # Electronic Parameters
-        self.N_Q    = 72
-        self.N_k    = 72
+        self.N_k    = self.N_Q
         self.N_v    = 2
         self.N_c    = 2
-        self.beta   = 8
+        self.N_e    = 8                # Updated to match working parameters (total electrons)
         self.nbnds = 10                # # bands in el-ph calculation
 
         # phonon modes
@@ -98,6 +97,8 @@ class parameters:
         # n. electrons
         if 'N_e' in inp:
             self.N_e = inp['N_e']
+        else:
+            self.N_e = 8  # Default value matching working script
         # exciton bands
         if 'alpha' in inp:
             self.alpha = inp['alpha']
@@ -116,11 +117,12 @@ class parameters:
 
 p = parameters()
 
-# These “path_…” variables allow your read_io script to refer to them:
-path_excph_data = "../dvscf/bn.save/SAVE/ndb.excph_gkkp_fragment_"
-path_ex         = "../dvscf/bn.save/SAVE/"
-path_bse        = "./"   # if your read_io_mpi.py does something like `path_bse + f"ndb.BS_diago_Q{…}"`
-path_excph      = "./"
+# Additional paths for compatibility
+path_elph_data = p.path_elph_data
+path_excph_data = '/..'  # might need to check this later
+path_ex = '/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/exciton/SAVE/'
+path_bse = '/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/exciton/'
+path_excph = './'
 
 # Phonon Mode Parameters
 nmodes = 12  # Number of phonon modes
@@ -157,10 +159,10 @@ MAX_RES_zz = 0.90425E+00
 sig_pl = 0.004 / Ha2eV  # Plasmon broadening
 sig_scat = 0.004 / Ha2eV  # Scattering broadening
 
-# Energy Range for Plotting (in eV)
+# Energy Range for Plotting (in eV) - Updated to match working parameters
 e1 = 5.00 / Ha2eV
-e2 = 5.30 / Ha2eV
-energy = np.linspace(e1, e2, 4000)  # Energy range from 5.0 eV to 5.3 eV with 4000 points
+e2 = 6.80 / Ha2eV
+energy = np.linspace(e1, e2, 4000)  # Energy range from 5.0 eV to 6.8 eV with 4000 points
 
 # Temperature Range for Calculations
 T_min = 5.        # Minimum temperature for calculations (K)
@@ -169,3 +171,23 @@ T_steps = 59.     # Number of temperature steps
 
 # Number of Degenerate States
 ndeg = 2          # Number of degenerate states (e.g., for excitons)
+
+# Working parameters - these match the confirmed working script
+# Updated Q-mesh to 6x6x2 = 72 Q-points
+Qmesh = [6, 6, 2]
+qmesh = Qmesh.copy()
+N_Q = np.prod(Qmesh)
+N_q = N_Q
+fQmesh = [6, 6, 2]
+fqmesh = fQmesh.copy()
+fN_Q = np.prod(fQmesh)
+fN_q = fN_Q
+
+# Electronic parameters - matching working script
+N_e = 8
+N_k = N_Q
+N_v = 2
+N_c = 2
+nbnds = 10
+alpha = 8
+beta = 8

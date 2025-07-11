@@ -1,0 +1,96 @@
+# .github/workflows/python-ci.yml
+
+# This file defines a GitHub Actions workflow for Continuous Integration (CI).
+# It automates the process of testing the code whenever changes are pushed to the repository.
+
+# Name of the workflow as it will appear in the "Actions" tab of the GitHub repository.
+name: Python Continuous Integration
+
+# -----------------
+# --- Triggers ----
+# -----------------
+# Specifies the events that will trigger this workflow to run.
+on:
+  # Trigger the workflow on push events to the "main" branch.
+  # This is ideal for ensuring the main branch is always stable.
+  push:
+    branches: ["main"]
+
+  # Trigger the workflow on pull request events targeting the "main" branch.
+  # This is crucial for vetting changes before they are merged into the main codebase.
+  pull_request:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab.
+  # Useful for re-running tests or testing a specific commit.
+  workflow_dispatch:
+
+# -----------------
+# ------ Jobs -----
+# -----------------
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel.
+jobs:
+  # Define a single job named "build-and-test".
+  build-and-test:
+    # The type of runner that the job will run on.
+    # "ubuntu-latest" is a standard, cost-effective choice for general-purpose CI.
+    runs-on: ubuntu-latest
+
+    # -----------------
+    # ---- Strategy ---
+    # -----------------
+    # Defines a build matrix for your jobs. This allows you to run tests
+    # across different versions of Python to ensure compatibility.
+    strategy:
+      # If one Python version fails, it won't cancel the other runs.
+      fail-fast: false
+      matrix:
+        # We will test against Python 3.12, which matches your local environment.
+        # You can add more versions here like '3.10', '3.11' to test broader compatibility.
+        python-version: ["3.12"]
+
+    # -----------------
+    # ----- Steps -----
+    # -----------------
+    # A sequence of tasks that will be executed as part of the job.
+    steps:
+      # --- Step 1: Check out the repository code ---
+      # This action checks out your repository under $GITHUB_WORKSPACE, so your job can access it.
+      - name: Check out repository
+        uses: actions/checkout@v4 # Uses a pre-made GitHub Action for checking out code.
+
+      # --- Step 2: Set up a Python environment ---
+      # This action sets up a Python environment for use in subsequent steps.
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          # Optional: Caching pip dependencies to speed up future builds.
+          cache: "pip"
+
+      # --- Step 3: Set up MPI ---
+      # The simulation code requires an MPI implementation. This step installs it on the runner.
+      - name: Install MPI libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mpich libmpich-dev
+
+      # --- Step 4: Install Python dependencies ---
+      # Installs the packages required by the project, including the testing framework.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest # Explicitly install pytest
+
+      # --- Step 5: Run the tests ---
+      # This step executes the test suite using pytest.
+      # The reference data you added to `tests/reference_data` will be used here.
+      # The `test_workflow.py` script will be discovered and run by pytest.
+      # For a non-MPI test, you could just run `pytest`.
+      - name: Generate test data
+        run: |
+          python tests/generate_test_data.py
+      - name: Run unit tests with pytest
+        run: |
+          pytest tests/
