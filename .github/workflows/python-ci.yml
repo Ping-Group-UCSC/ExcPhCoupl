@@ -149,6 +149,6 @@ jobs:
       - name: Run full workflow with mpirun
         # This command runs the main application with 2 processes.
         # The test passes if the command exits with a status code of 0.
-        # The `--use-hwthread-cpus` flag can help prevent resource conflicts on some runners.
+        # The test passes if the command exits with a status code of 0.
         run: |
-          mpirun -n 2 --use-hwthread-cpus python src/run.py -yml_inp config_test_mpi.yml
+          mpirun -n 2 python src/run.py -yml_inp config_test_mpi.yml
