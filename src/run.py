@@ -31,7 +31,9 @@ def main():
 			log.info("\t COMPUTE EXCITON-PHONON COUPLING")
 			log.info("\t ---------------------------------------------------------------------------------------- ")
 
-		success = run_split_excph()
+		# Step 2a: Compute exciton-phonon coupling fragments (split calculation)
+		# Pass the loaded data arrays directly to the function.
+		success = run_split_excph(g_elph, A_exc)
 		if not success:
 			if mpi.rank == mpi.root:
 				log.error("\t Failed to compute exciton-phonon coupling fragments!")

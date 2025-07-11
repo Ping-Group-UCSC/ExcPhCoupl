@@ -9,63 +9,7 @@ from common.param import p
 from common.func import *
 from mpi_module import mpi, MPI_ROOT
 
-def read_excph_input_data():
-    """
-    Read input data files for exciton-phonon coupling calculation.
-    This function reads the preprocessed data files and broadcasts them to all MPI processes.
-    """
-    if mpi.rank == MPI_ROOT:
-        log.info("Reading input data files for exciton-phonon coupling...")
 
-        # Check if required files exist
-        g_elph_file = os.path.join(p.output_data_dir, 'g_elph.dat')
-        A_exc_file = os.path.join(p.output_data_dir, 'A_exc.dat')
-
-        if not os.path.exists(g_elph_file):
-            log.error(f"g_elph.dat not found: {g_elph_file}")
-            log.error("Run the data processing step first!")
-            return None, None
-
-        if not os.path.exists(A_exc_file):
-            log.error(f"A_exc.dat not found: {A_exc_file}")
-            log.error("Run the data processing step first!")
-            return None, None
-
-        # Read the data files
-        g_elph = np.fromfile(g_elph_file, dtype='complex64')
-        A_exc = np.fromfile(A_exc_file, dtype='complex64')
-
-        # Reshape arrays using working script dimensions
-        expected_g_shape = (p.N_Q, p.N_k, p.N_v + p.N_c, p.N_v + p.N_c, p.nmodes)
-        expected_A_shape = (p.N_Q, p.beta, p.N_k, p.N_v, p.N_c)
-
-        try:
-            g_elph = g_elph.reshape(expected_g_shape)
-            A_exc = A_exc.reshape(expected_A_shape)
-        except ValueError as e:
-            log.error(f"Error reshaping arrays: {e}")
-            log.error(f"g_elph expected shape: {expected_g_shape}, file size: {g_elph.size}")
-            log.error(f"A_exc expected shape: {expected_A_shape}, file size: {A_exc.size}")
-            # Try to debug by checking what the actual dimensions could be
-            log.error(f"g_elph file has {g_elph.size} elements")
-            log.error(f"A_exc file has {A_exc.size} elements")
-            return None, None
-
-        log.info(f"g_elph shape: {g_elph.shape}")
-        log.info(f"A_exc shape: {A_exc.shape}")
-        log.debug(f"g_elph sample: {g_elph[0, 0, 0, 0, 0]}")
-        log.debug(f"A_exc sample: {A_exc[0, 0, 0, 0, 0]}")
-
-    else:
-        g_elph = None
-        A_exc = None
-
-    # Broadcast data to all processes
-    if mpi.size > 1:
-        g_elph = mpi.comm.bcast(g_elph, root=MPI_ROOT)
-        A_exc = mpi.comm.bcast(A_exc, root=MPI_ROOT)
-
-    return g_elph, A_exc
 
 def compute_excph_contributions(g_elph, A_exc, Q_ind):
     """
