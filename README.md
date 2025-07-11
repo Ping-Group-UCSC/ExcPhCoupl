@@ -1,6 +1,6 @@
 # Exciton-Phonon Coupling Package
 
-This package calculates exciton-phonon coupling properties from Yambo and Quantum Espresso simulation data, featuring an MPI-parallelized workflow.
+This post processing package calculates exciton-phonon coupling properties from Yambo and Quantum Espresso.
 
 ## Current Status
 
@@ -9,12 +9,10 @@ The core data processing workflow is implemented and unit-tested. This includes:
 2.  **Step 2:** Computing exciton-phonon coupling matrices in parallel (`split` and `collect`).
 3.  **Step 3:** Averaging degenerate exciton energies.
 
-The project includes a full Continuous Integration (CI) setup using unit tests to ensure the mathematical correctness of the core computational logic.
-
 ## Prerequisites
 
--   Python 3.8+
--   An MPI implementation (e.g., OpenMPI, MPICH)
+-   Python 3.xx
+-   OpenMPI
 -   Required Python packages as listed in `requirements.txt`.
 
 ## Quick Start
