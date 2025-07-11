@@ -195,9 +195,9 @@ def test_compute_excph_contributions_known_value(test_data):
     # For the conduction part (temp_cc), it's a sum of N_k * N_c terms (since all inputs are 1).
     # For the valence part (temp_vv), it's a sum of N_k * N_v terms.
     # The result of np.einsum is N_c for temp_cc and N_v for temp_vv for each k_ind loop.
-    # The final sum is over N_k.
-    expected_cc_value = p.N_k * p.N_c
-    expected_vv_value = -1 * p.N_k * p.N_v # Note the negative sign for valence.
+    # The final sum is over N_k and N_q because of the += inside the main loop.
+    expected_cc_value = p.N_q * p.N_k * p.N_c
+    expected_vv_value = -1 * p.N_q * p.N_k * p.N_v # Note the negative sign for valence.
 
     # Assert that the first element of the first output array has the expected value.
     # We check the real part because our inputs were real (with 0j imaginary part).
