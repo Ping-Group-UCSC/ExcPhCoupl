@@ -78,7 +78,7 @@ The tests can be found in the `tests/` directory and verify the following:
     *   **Why:** Ensures the calculations are numerically stable and free from errors like division by zero.
 
 4.  **Known Value Regression Test (`test_compute_excph_contributions_known_value`)**:
-    *   **What:** The most critical test. It runs the main computational function with a simple, known input and verifies that the output matches a pre-calculated, correct answer.
+    *   **What:** It runs the main computational function with a simple, known input and verifies that the output matches a pre-calculated, correct answer.
     *   **Why:** Protects the scientific integrity of the code by immediately detecting any accidental changes to the underlying mathematical formulas.
 
 This project is set up with GitHub Actions to automatically run these tests upon every push and pull request to the `main` and `develop` branches.
@@ -89,8 +89,7 @@ Recent updates have significantly improved the robustness and professionalism of
 
 -   **MPI Parallelization**: The core `split` and `collect` logic has been fully parallelized with MPI, allowing for efficient computation on multi-core systems.
 -   **MPI Hang/Deadlock Resolution**: Solved critical bugs related to MPI communication, ensuring that parallel runs complete and terminate cleanly without hanging.
--   **Robust Unit Testing**: Implemented a suite of unit tests using `pytest` that verify the core mathematical logic of the code, independent of specific material data.
--   **Continuous Integration (CI)**: A GitHub Actions workflow automatically runs a two-stage test pipeline on every push:
+-   **Continuous Integration (CI)**:
     1.  **Serial Unit Tests**: Verifies the core logic and numerical stability.
     2.  **Parallel Integration Test**: Confirms the full application runs without crashing or deadlocking in a multi-process MPI environment.
 -   **Code Refactoring**: Improved the code's modularity by refactoring key functions to accept data as arguments rather than reading files directly, making the code cleaner and easier to test.
