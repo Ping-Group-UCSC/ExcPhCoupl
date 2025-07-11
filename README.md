@@ -43,12 +43,12 @@ python utils/get_qlist_yambo.py
 
 ### 4. Run the Workflow
 
-Execute the main workflow using `mpirun`. This will run steps 1-3 and generate the final `.dat` files in the directory specified in your config.
+Execute the main workflow using `mpirun`. This will generate the multiple `.dat` files in the directory specified in your config.
 ```bash
 mpirun -n 4 python src/run.py -yml_inp config.yml
 ```
 
-### 5. Run Tests
+<!-- ### 5. Run Tests
 
 To verify the integrity of the code's core logic, run the unit tests using `pytest`:
 ```bash
@@ -57,11 +57,9 @@ python tests/generate_test_data.py
 
 # Then, run the tests
 pytest tests/
-```
+``` -->
 
 ## Testing Strategy
-
-This project uses a robust unit testing suite to ensure the correctness and stability of the core computational logic. The tests are designed to be independent of specific materials or large datasets, making them fast and reliable for continuous integration.
 
 The tests can be found in the `tests/` directory and verify the following:
 
