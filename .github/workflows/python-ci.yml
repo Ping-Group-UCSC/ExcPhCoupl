@@ -4,7 +4,7 @@
 # It automates the process of testing the code whenever changes are pushed to the repository.
 
 # Name of the workflow as it will appear in the "Actions" tab of the GitHub repository.
-name: Python Continuous Integration
+name: ExcPhCoupl CI
 
 # -----------------
 # --- Triggers ----

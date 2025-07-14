@@ -93,6 +93,7 @@ def main():
 			log.info("  - excph.dat: Complex exciton-phonon coupling matrices")
 			log.info("  - excph2.dat: Squared absolute values of coupling matrices")
 			log.info("\t ---------------------------------------------------------------------------------------- ")
+			log.info("\t ---------------------------------------------------------------------------------------- ")
 			log.info("\n")
 	except Exception:
 		if mpi.rank == mpi.root:
