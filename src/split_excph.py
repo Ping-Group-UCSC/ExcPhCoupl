@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import print_function, division
 import numpy as np
-import itertools
+
 import os
 import time
 from logmod import log
@@ -11,54 +11,79 @@ from mpi_module import mpi, MPI_ROOT
 
 
 
+def _build_kvec_table(N_Q, qmesh):
+    """
+    Vectorized ik2k for all indices 0..N_Q-1.
+    Returns all_kvecs of shape (N_Q, 3).
+    """
+    iks = np.arange(N_Q, dtype=np.int64)
+    kx = iks // (qmesh[1] * qmesh[2])
+    ky = (iks // qmesh[2]) % qmesh[1]
+    kz = iks % qmesh[2]
+    return np.stack([kx / qmesh[0], ky / qmesh[1], kz / qmesh[2]], axis=1)  # (N_Q, 3)
+
+
 def compute_excph_contributions(g_elph, A_exc, Q_ind):
     """
     Compute exciton-phonon coupling contributions for a single Q point.
-    This follows the exact logic from the original split_excph.py script.
+    The inner k-point loop is fully vectorized: index maps are precomputed
+    and each q iteration uses a single batched einsum over all N_k k-points.
     """
+    N_Q = p.N_Q
+
+    # --- Precompute k-vectors and index maps ---
+    all_kvecs = _build_kvec_table(N_Q, p.qmesh)   # (N_Q, 3)
+    Q_vec = all_kvecs[Q_ind]                        # (3,)
+
+    # Qq_inds[q]   = index of Q + q  (shape N_q)
+    Qq_inds = k2ik(Q_vec[None, :] + all_kvecs)     # (N_q,)
+    # kQ_inds[k]   = index of k - Q  (shape N_k)
+    kQ_inds = k2ik(all_kvecs - Q_vec[None, :])     # (N_k,)
+    # kq_table[k,q] = index of k + q (shape N_k x N_q)
+    kq_vecs = (all_kvecs[:, None, :] + all_kvecs[None, :, :]).reshape(-1, 3)  # (N_k*N_q, 3)
+    kq_table = k2ik(kq_vecs).reshape(N_Q, N_Q)    # (N_k, N_q)
+
+    # Pre-fetch A_exc slice that is constant for all q: shape (alpha, N_k, N_v, N_c)
+    A_Q = A_exc[Q_ind, :p.alpha, :, :, :]
+
     temp_cc = np.zeros((p.N_q, p.alpha, p.beta, p.nmodes), dtype='complex64')
     temp_vv = np.zeros((p.N_q, p.alpha, p.beta, p.nmodes), dtype='complex64')
 
-    # Add a progress counter
-    total_iterations = p.N_q * p.N_k
-    iteration_count = 0
-    log_interval = total_iterations // 10
+    log_interval = max(1, p.N_q // 10)
 
-    for q_ind, k_ind in itertools.product(range(p.N_q), range(p.N_k)):
-        iteration_count += 1
-        if iteration_count % log_interval == 0:
-            progress = (iteration_count / total_iterations) * 100
-            log.debug(f"Rank {mpi.rank}, Q_ind {Q_ind}: Loop progress {progress:.1f}% ({iteration_count}/{total_iterations})")
+    for q_ind in range(p.N_q):
+        if q_ind % log_interval == 0:
+            log.debug(f"Rank {mpi.rank}, Q_ind {Q_ind}: q-loop {q_ind}/{p.N_q} "
+                      f"({100 * q_ind // p.N_q}%)")
 
-        try:
-            # Compute k-point indices
-            Qq_ind = k2ik(ik2k(Q_ind) + ik2k(q_ind))
-            kq_ind = k2ik(ik2k(k_ind) + ik2k(q_ind))
-            kQ_ind = k2ik(ik2k(k_ind) - ik2k(Q_ind))
-
-            # Ensure indices are within bounds
-            if Qq_ind >= p.N_Q or kq_ind >= p.N_k or kQ_ind >= p.N_k:
-                continue
-
-            # Conduction band contribution
-            temp_cc[q_ind, :, :, :] += np.einsum(
-                'mij,nik,jkl->nml',
-                A_exc[Qq_ind, 0:p.beta, kq_ind, :, :].conj(),
-                A_exc[Q_ind, 0:p.alpha, k_ind, :, :],
-                g_elph[q_ind, kq_ind, p.N_v:p.N_v + p.N_c, p.N_v:p.N_v + p.N_c, :].conj()
-            )
-
-            # Valence band contribution
-            temp_vv[q_ind, :, :, :] += -np.einsum(
-                'mij,nkj,kil->nml',
-                A_exc[Qq_ind, 0:p.beta, k_ind, :, :].conj(),
-                A_exc[Q_ind, 0:p.alpha, k_ind, :, :],
-                g_elph[q_ind, kQ_ind, 0:p.N_v, 0:p.N_v, :].conj()
-            )
-
-        except (IndexError, ValueError) as e:
-            log.debug(f"Skipping indices Q={Q_ind}, q={q_ind}, k={k_ind}: {e}")
+        Qq = int(Qq_inds[q_ind])
+        if Qq >= N_Q:
             continue
+
+        kq_k = kq_table[:, q_ind]   # (N_k,) — kq index for each k at this q
+
+        # ── Conduction band contribution ──────────────────────────────────────
+        # Per-k original: einsum('mij,nik,jkl->nml',
+        #   A_exc[Qq,:beta,kq,:,:].conj(),          # m,i,j
+        #   A_exc[Q, :alpha,k,:,:],                 # n,i,a  (a = c-band)
+        #   g_elph[q,kq,N_v:,N_v:,:].conj())        # j,a,l
+        # Vectorized over K (k-point): 'mKij,nKia,Kjal->nml'
+        A1 = A_exc[Qq, :p.beta, kq_k, :, :].conj()                            # (beta, N_k, N_v, N_c)
+        G  = g_elph[q_ind, kq_k,
+                    p.N_v:p.N_v + p.N_c, p.N_v:p.N_v + p.N_c, :].conj()     # (N_k, N_c, N_c, nmodes)
+        temp_cc[q_ind] += np.einsum('mKij,nKia,Kjal->nml', A1, A_Q, G,
+                                    optimize=True)
+
+        # ── Valence band contribution ─────────────────────────────────────────
+        # Per-k original: -einsum('mij,nkj,kil->nml',
+        #   A_exc[Qq,:beta,k,:,:].conj(),            # m,i,j  (raw k, not kq!)
+        #   A_exc[Q, :alpha,k,:,:],                  # n,a,j  (a = v-band)
+        #   g_elph[q,kQ,0:N_v,0:N_v,:].conj())       # a,i,l
+        # Vectorized over K: 'mKij,nKaj,Kail->nml'
+        A1 = A_exc[Qq, :p.beta, :, :, :].conj()                               # (beta, N_k, N_v, N_c)
+        G  = g_elph[q_ind, kQ_inds, 0:p.N_v, 0:p.N_v, :].conj()             # (N_k, N_v, N_v, nmodes)
+        temp_vv[q_ind] += -np.einsum('mKij,nKaj,Kail->nml', A1, A_Q, G,
+                                     optimize=True)
 
     return temp_cc, temp_vv
 
