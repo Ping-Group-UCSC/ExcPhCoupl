@@ -4,7 +4,7 @@ from input_parser import parser
 from common.param import p
 
 from mpi_module import mpi
-from read_io import collect_excph_data, average_degenerate_energies
+from read_io_qe import collect_excph_data, average_degenerate_energies
 from split_excph import run_split_excph
 import os
 
@@ -95,11 +95,18 @@ def main():
 			log.info("\t ---------------------------------------------------------------------------------------- ")
 			log.info("\t ---------------------------------------------------------------------------------------- ")
 			log.info("\n")
-	except Exception:
+	except Exception as e:
 		if mpi.rank == mpi.root:
 			import traceback
+
+			print("\n=== WORKFLOW FAILED ===")
+			print(repr(e))
+			traceback.print_exc()
+
 			log.error("Workflow failed with an unhandled exception:")
-			log.error(f"{traceback.format_exc()}")
+			log.error(repr(e))
+			log.error(traceback.format_exc())
+
 		mpi.comm.Abort(1)
 
 

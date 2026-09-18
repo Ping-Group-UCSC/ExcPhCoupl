@@ -67,7 +67,8 @@ def read_qpoints_yambo():
 		Q_yambo_rku = np.genfromtxt(qpt_file_path, skip_header=1, usecols=(0,1,2), dtype=float)
 
 	Q_yambo = np.einsum('ij,ni->nj', LA.inv(b_iku), Q_yambo_rku)
-	comm.Barrier()
+	# comm.Barrier()
+	mpi.comm.Barrier()
 
 	if rank == ROOT:
 		log.info(f"Q_yambo shape: {Q_yambo.shape}")

@@ -1,4 +1,4 @@
-from read_io import read_qpoints_yambo, read_bse_wavefunction, read_elph_data, normalize_elph
+from read_io_qe import read_qpoints_yambo, read_bse_wavefunction, read_elph_data, normalize_elph
 from logmod import log
 from common.param import p
 from mpi_module import mpi, MPI_ROOT
