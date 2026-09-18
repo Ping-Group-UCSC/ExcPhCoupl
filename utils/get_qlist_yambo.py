@@ -6,7 +6,7 @@ import os
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-YAMBO_DATA_DIR = "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/QPT6/dvscf/bn.save"
+YAMBO_DATA_DIR = "/pscratch/sd/k/kdongol/hBN_18184/18x18_GW"
 # ──────────────────────────────────────────────────────────────────────────────
 
 def search_string_in_file(file_name, string_to_search):

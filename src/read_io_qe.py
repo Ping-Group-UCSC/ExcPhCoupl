@@ -269,7 +269,12 @@ def read_elph_data(Q_yambo):
 
 			num_k_to_process = min(elph_data_frag.shape[0], p.N_k)
 
-			arr_ELPH_fragment = elph_data_frag[:, p.N_e-p.N_v:p.N_e+p.N_c, p.N_e-p.N_v:p.N_e+p.N_c, :, :]
+			if actual_bands == p.N_v + p.N_c:
+				# File already contains only the relevant bands
+				b_start, b_end = 0, actual_bands
+			else:
+				b_start, b_end = p.N_e - p.N_v, p.N_e + p.N_c
+			arr_ELPH_fragment = elph_data_frag[:, b_start:b_end, b_start:b_end, :, :]
 			elph_complex = arr_ELPH_fragment[:, :, :, :, 0] + 1j * arr_ELPH_fragment[:, :, :, :, 1]
 			g_temp = elph_complex.reshape((p.N_k, p.N_c + p.N_v, p.N_c + p.N_v, actual_nmodes))
 
@@ -329,7 +334,12 @@ def read_elph_data(Q_yambo):
 
 			num_k_to_process = min(num_k_in_file, p.N_k)
 
-			arr_ELPH_fragment = elph_data_frag_raw[:, p.N_e-p.N_v:p.N_e+p.N_c, p.N_e-p.N_v:p.N_e+p.N_c, :, :]
+			if actual_bands == p.N_v + p.N_c:
+				# File already contains only the relevant bands
+				b_start, b_end = 0, actual_bands
+			else:
+				b_start, b_end = p.N_e - p.N_v, p.N_e + p.N_c
+			arr_ELPH_fragment = elph_data_frag_raw[:, b_start:b_end, b_start:b_end, :, :]
 			elph_complex = arr_ELPH_fragment[:, :, :, :, 0] + 1j * arr_ELPH_fragment[:, :, :, :, 1]
 			g_temp = elph_complex.reshape((p.N_k, p.N_c + p.N_v, p.N_c + p.N_v, actual_nmodes))
 

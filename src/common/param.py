@@ -11,9 +11,9 @@ class parameters:
     def __init__(self):
 
         # ─── File Paths ──────────────────────────────────────────────────────────
-        self.data_dir       = "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/QPT6/dvscf/bn.save"
-        self.path_bse_data  = "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/exciton/SAVE"
-        self.elph_dir       = "/Users/keyneshdongol/Downloads/excph-devel(1)/yambo-qe-nk662-exp-lat/QPT6/dvscf/bn.save/SAVE"
+        self.data_dir       = "/pscratch/sd/k/kdongol/hBN_18184/18x18_GW"
+        self.path_bse_data  = "/pscratch/sd/k/kdongol/hBN_18184/18x18_GW/SAVE"
+        self.elph_dir       = "/pscratch/sd/k/kdongol/hBN_18184/18x18_GW/SAVE"
         self.path_elph_data = self.elph_dir + "/ndb.elph_gkkp_expanded_fragment_"
         # ─────────────────────────────────────────────────────────────────────────
 
